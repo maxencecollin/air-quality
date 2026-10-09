@@ -14,8 +14,11 @@ def add_temporal_features(df: pd.DataFrame, date_col: str = "date") -> pd.DataFr
     Returns:
     - copy of df with two extra columns, "month" and "dayofweek"
     """
-    # TODO: parse date_col as a datetime, then add "month" and "dayofweek"
-    # columns derived from it, using the .dt accessor
+    enriched = df.copy()
+    enriched[date_col] = pd.to_datetime(enriched[date_col])
+    enriched["month"] = enriched[date_col].dt.month
+    enriched["dayofweek"] = enriched[date_col].dt.dayofweek
+    return enriched
 
 
 def feature_columns(df: pd.DataFrame, target_col: str = "pm2_5") -> list[str]:
@@ -36,5 +39,5 @@ def feature_columns(df: pd.DataFrame, target_col: str = "pm2_5") -> list[str]:
     - list of numeric column names, excluding target_col, "city", "date",
       "site_latitude" and "site_longitude"
     """
-    # TODO: list the numeric columns of df, excluding target_col, "city",
-    # "date", "site_latitude" and "site_longitude"
+    excluded = {target_col, "city", "date", "site_latitude", "site_longitude"}
+    return [col for col in df.select_dtypes(include="number").columns if col not in excluded]
