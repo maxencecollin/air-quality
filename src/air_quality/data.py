@@ -17,8 +17,9 @@ def load_datasets(data_dir: Path = DEFAULT_DATA_DIR) -> tuple[pd.DataFrame, pd.D
     Returns:
     - (train_df, test_df): the two DataFrames, loaded as-is
     """
-    # TODO: read train.csv and test.csv from data_dir with pd.read_csv, and
-    # return them as a (train_df, test_df) tuple
+    train_df = pd.read_csv(Path(data_dir) / "train.csv")
+    test_df = pd.read_csv(Path(data_dir) / "test.csv")
+    return train_df, test_df
 
 
 def restrict_to_scope(
@@ -41,11 +42,17 @@ def restrict_to_scope(
     Returns:
     - DataFrame filtered to the given cities and columns, index reset
     """
-    # TODO: filter df to the given cities and columns, then, if max_rows_per_city
-    # is set, draw a reproducible random sample of at most that many rows for
-    # each city and concatenate the results back into a single DataFrame
+    scoped = df.loc[df["city"].isin(cities), columns]
 
+    if max_rows_per_city is not None:
+        scoped = pd.concat(
+            [
+                city_df.sample(n=min(len(city_df), max_rows_per_city), random_state=random_state)
+                for _, city_df in scoped.groupby("city")
+            ]
+        )
 
+    return scoped.reset_index(drop=True)
 
 
 def fill_missing_by_city(
@@ -66,9 +73,13 @@ def fill_missing_by_city(
     Returns:
     - DataFrame with the given columns filled, one city at a time
     """
-    # TODO: sort by city_col and date_col, then for each column, group by
-    # city_col and apply forward-fill followed by backward-fill within each
-    # group with groupby().transform() — never fill across cities
+    filled = df.sort_values([city_col, date_col]).reset_index(drop=True)
+
+    # Fill within each city only: one city's values must never fill another's gaps
+    for col in columns:
+        filled[col] = filled.groupby(city_col)[col].transform(lambda s: s.ffill().bfill())
+
+    return filled
 
 
 # ============================================================================
