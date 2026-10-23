@@ -87,12 +87,21 @@ def evaluate_group_cv(
       fold's regression metrics) and "rmse_mean"/"rmse_std"/"mae_mean"/
       "mae_std"/"r2_mean"/"r2_std" aggregated across folds
     """
-    # TODO: run GroupKFold with one fold per distinct value of groups_col (so
-    # each fold holds out exactly one group), fit a fresh clone() of model on
-    # each fold's training rows, evaluate it on the held-out group with
-    # regression_metrics, then aggregate the mean and std of each metric
-    # across folds
+    groups = df[groups_col]
+    cv = GroupKFold(n_splits=groups.nunique())
 
+    folds = []
+    for train_idx, test_idx in cv.split(df, groups=groups):
+        train_df = df.iloc[train_idx]
+        test_df = df.iloc[test_idx]
 
+        # A fresh clone per fold, so no fold reuses what a previous one learned
+        metrics = evaluate_manual_split(clone(model), train_df, test_df, feature_cols, target_col)
+        folds.append({"test_group": test_df[groups_col].iloc[0], **metrics})
 
-
+    result = {"folds": folds}
+    for metric in ("rmse", "mae", "r2"):
+        values = [fold[metric] for fold in folds]
+        result[f"{metric}_mean"] = float(np.mean(values))
+        result[f"{metric}_std"] = float(np.std(values))
+    return result
