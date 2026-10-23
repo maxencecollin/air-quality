@@ -101,8 +101,8 @@ def columns_above_missing_threshold(df: pd.DataFrame, threshold: float = 0.7) ->
     Returns:
     - list of column names whose missing-value ratio is strictly above threshold
     """
-    # TODO: compute the fraction of missing values per column, then return the
-    # names of the columns whose fraction is strictly above threshold
+    missing_ratio = df.isna().mean()
+    return missing_ratio[missing_ratio > threshold].index.tolist()
 
 
 def drop_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
@@ -116,5 +116,4 @@ def drop_columns(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
     Returns:
     - DataFrame without the given columns
     """
-    # TODO: drop the given columns from df, ignoring any name that is not
-    # actually a column of df
+    return df.drop(columns=columns, errors="ignore")
