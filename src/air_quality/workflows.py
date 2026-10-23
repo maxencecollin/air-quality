@@ -104,4 +104,21 @@ def run_advanced(config: AdvancedPipelineConfig | None = None) -> dict:
     Returns:
     - dict of metrics — the exact shape depends on which modules you have added
     """
-    # TODO: build this up module by module, following content/session3/'s pages
+    config = config or AdvancedPipelineConfig()
+    train_df, _ = data.load_datasets()
+
+    scoped = data.restrict_to_scope(train_df, config.cities, config.columns)
+
+    # Module 2: drop columns too empty to fill before filling the rest per city
+    to_drop = data.columns_above_missing_threshold(scoped, config.missing_threshold)
+    reduced = data.drop_columns(scoped, to_drop)
+    fillable_columns = [c for c in reduced.columns if c not in ("city", "date")]
+    cleaned = data.fill_missing_by_city(reduced, fillable_columns)
+    enriched = features.add_temporal_features(cleaned)
+
+    train_split = enriched[enriched["city"] == config.train_city]
+    test_split = enriched[enriched["city"] == config.test_city]
+
+    feature_cols = features.feature_columns(enriched)
+    model = LinearRegression()
+    return evaluation.evaluate_manual_split(model, train_split, test_split, feature_cols)
