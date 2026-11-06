@@ -1,4 +1,4 @@
-"""Command-line entry point for the Air Quality baseline pipeline."""
+"""Command-line entry point for the Air Quality advanced pipeline."""
 
 import argparse
 import json
@@ -8,14 +8,12 @@ from air_quality.workflows import AdvancedPipelineConfig, run_advanced
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the Air Quality advanced pipeline")
-    parser.add_argument("--train-city", default="Kampala")
-    parser.add_argument("--test-city", default="Bujumbura")
     return parser.parse_args()
 
 
 def main() -> None:
-    args = parse_args()
-    config = AdvancedPipelineConfig(train_city=args.train_city, test_city=args.test_city)
+    parse_args()
+    config = AdvancedPipelineConfig()
     metrics = run_advanced(config)
     print(json.dumps(metrics, indent=2))
 

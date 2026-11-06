@@ -77,8 +77,6 @@ class AdvancedPipelineConfig:
     under content/session3/ for what changes.
     """
 
-    train_city: str = "Kampala"
-    test_city: str = "Bujumbura"
     cities: list[str] = field(
         default_factory=lambda: ["Kampala", "Nairobi", "Lagos", "Bujumbura"]
     )
@@ -116,9 +114,8 @@ def run_advanced(config: AdvancedPipelineConfig | None = None) -> dict:
     cleaned = data.fill_missing_by_city(reduced, fillable_columns)
     enriched = features.add_temporal_features(cleaned)
 
-    train_split = enriched[enriched["city"] == config.train_city]
-    test_split = enriched[enriched["city"] == config.test_city]
-
     feature_cols = features.feature_columns(enriched)
     model = LinearRegression()
-    return evaluation.evaluate_manual_split(model, train_split, test_split, feature_cols)
+
+    # Module 3: hold out each city in turn instead of a single manual split
+    return evaluation.evaluate_group_cv(model, enriched, feature_cols, groups_col="city")
