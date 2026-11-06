@@ -23,6 +23,23 @@ DEFAULT_COLUMNS = [
     "cloud_cloud_fraction",
 ]
 
+# Every Sentinel-5P column in the raw data starts with one of these product names
+SATELLITE_PREFIXES = (
+    "sulphurdioxide",
+    "carbonmonoxide",
+    "nitrogendioxide",
+    "formaldehyde",
+    "uvaerosolindex",
+    "ozone",
+    "uvaerosollayerheight",
+    "cloud",
+)
+
+
+def satellite_columns(columns) -> list[str]:
+    """Return the satellite measurement columns, recognised by their product prefix."""
+    return [c for c in columns if c.startswith(SATELLITE_PREFIXES)]
+
 
 @dataclass
 class PipelineConfig:
