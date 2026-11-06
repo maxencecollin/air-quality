@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 from sklearn.linear_model import LinearRegression
 
-from air_quality import data, evaluation, features
+from air_quality import data, evaluation, features, selection
 
 DEFAULT_COLUMNS = [
     "city",
@@ -97,8 +97,10 @@ class AdvancedPipelineConfig:
     cities: list[str] = field(
         default_factory=lambda: ["Kampala", "Nairobi", "Lagos", "Bujumbura"]
     )
-    columns: list[str] = field(default_factory=lambda: list(DEFAULT_COLUMNS))
+    # None means the identifier/target columns plus every satellite column in the data
+    columns: list[str] | None = None
     missing_threshold: float = 0.7
+    n_features_to_select: int = 8
 
 
 def run_advanced(config: AdvancedPipelineConfig | None = None) -> dict:
@@ -122,7 +124,12 @@ def run_advanced(config: AdvancedPipelineConfig | None = None) -> dict:
     config = config or AdvancedPipelineConfig()
     train_df, _ = data.load_datasets()
 
-    scoped = data.restrict_to_scope(train_df, config.cities, config.columns)
+    columns = config.columns
+    if columns is None:
+        # Module 4: start from all satellite columns and let RFE choose
+        base_columns = [c for c in DEFAULT_COLUMNS if not c.startswith(SATELLITE_PREFIXES)]
+        columns = base_columns + satellite_columns(train_df.columns)
+    scoped = data.restrict_to_scope(train_df, config.cities, columns)
 
     # Module 2: drop columns too empty to fill before filling the rest per city
     to_drop = data.columns_above_missing_threshold(scoped, config.missing_threshold)
@@ -133,6 +140,11 @@ def run_advanced(config: AdvancedPipelineConfig | None = None) -> dict:
 
     feature_cols = features.feature_columns(enriched)
     model = LinearRegression()
+
+    # Module 4: keep only the features RFE finds useful, avoiding redundant ones
+    feature_cols = selection.select_features_rfe(
+        model, enriched, feature_cols, n_features_to_select=config.n_features_to_select
+    )
 
     # Module 3: hold out each city in turn instead of a single manual split
     return evaluation.evaluate_group_cv(model, enriched, feature_cols, groups_col="city")
