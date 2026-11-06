@@ -25,9 +25,9 @@ def select_k_best_features(
     Returns:
     - list of the k selected column names, in their original order in feature_cols
     """
-    # TODO: fit SelectKBest(score_func=f_regression, k=k) on df[feature_cols]
-    # and df[target_col], then use its get_support() boolean mask to return
-    # the corresponding names from feature_cols
+    selector = SelectKBest(score_func=f_regression, k=k)
+    selector.fit(df[feature_cols], df[target_col])
+    return [col for col, kept in zip(feature_cols, selector.get_support()) if kept]
 
 
 def select_features_rfe(
@@ -57,6 +57,6 @@ def select_features_rfe(
     Returns:
     - list of the selected column names, in their original order in feature_cols
     """
-    # TODO: fit RFE(estimator=model, n_features_to_select=n_features_to_select)
-    # on df[feature_cols] and df[target_col], then use its get_support()
-    # boolean mask the same way as select_k_best_features
+    selector = RFE(estimator=model, n_features_to_select=n_features_to_select)
+    selector.fit(df[feature_cols], df[target_col])
+    return [col for col, kept in zip(feature_cols, selector.get_support()) if kept]
