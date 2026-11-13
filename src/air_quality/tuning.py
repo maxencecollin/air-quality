@@ -49,5 +49,32 @@ def tune_xgboost(
     # grid.best_params_/grid.best_score_/grid.cv_results_ (rmse/mae come back
     # negative from "neg_..." scorers — negate them back to plain values; r2
     # does not need negating)
+    from xgboost import XGBRegressor
+
+    grid = GridSearchCV(
+        XGBRegressor(n_estimators=100, random_state=42),
+        param_grid,
+        cv=GroupKFold(n_splits=df[groups_col].nunique()),
+        scoring={"rmse": "neg_root_mean_squared_error", "mae": "neg_mean_absolute_error", "r2": "r2"},
+        refit="rmse",
+    )
+    grid.fit(df[feature_cols], df[target_col], groups=df[groups_col])
+
+    results = grid.cv_results_
+    # rmse and mae come back negative from the "neg_..." scorers, so flip their sign
+    cv_results = [
+        {
+            "params": params,
+            "rmse": float(-results["mean_test_rmse"][i]),
+            "mae": float(-results["mean_test_mae"][i]),
+            "r2": float(results["mean_test_r2"][i]),
+        }
+        for i, params in enumerate(results["params"])
+    ]
+    return {
+        "best_params": grid.best_params_,
+        "best_rmse": float(-grid.best_score_),
+        "cv_results": cv_results,
+    }
 
 
