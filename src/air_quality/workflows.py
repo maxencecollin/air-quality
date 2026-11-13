@@ -101,6 +101,10 @@ class AdvancedPipelineConfig:
     columns: list[str] | None = None
     missing_threshold: float = 0.7
     n_features_to_select: int = 8
+    # Module 5: best grid point found by tune_xgboost in the Module 5 notebook
+    xgb_params: dict = field(
+        default_factory=lambda: {"max_depth": 3, "learning_rate": 0.05}
+    )
 
 
 def run_advanced(config: AdvancedPipelineConfig | None = None) -> dict:
@@ -139,12 +143,16 @@ def run_advanced(config: AdvancedPipelineConfig | None = None) -> dict:
     enriched = features.add_temporal_features(cleaned)
 
     feature_cols = features.feature_columns(enriched)
-    model = LinearRegression()
 
     # Module 4: keep only the features RFE finds useful, avoiding redundant ones
     feature_cols = selection.select_features_rfe(
-        model, enriched, feature_cols, n_features_to_select=config.n_features_to_select
+        LinearRegression(), enriched, feature_cols, n_features_to_select=config.n_features_to_select
     )
+
+    # Module 5: XGBoost with the tuned parameters (xgboost is optional, so imported here)
+    from xgboost import XGBRegressor
+
+    model = XGBRegressor(n_estimators=100, random_state=42, **config.xgb_params)
 
     # Module 3: hold out each city in turn instead of a single manual split
     return evaluation.evaluate_group_cv(model, enriched, feature_cols, groups_col="city")
