@@ -35,5 +35,13 @@ def log_run(
     # mlflow.set_experiment(experiment_name), then open
     # mlflow.start_run(run_name=run_name) as a context manager, log_params(params)
     # and log_metrics(metrics) inside it, and return run.info.run_id
+    import mlflow
+
+    mlflow.set_tracking_uri(tracking_uri)
+    mlflow.set_experiment(experiment_name)
+    with mlflow.start_run(run_name=run_name) as run:
+        mlflow.log_params(params)
+        mlflow.log_metrics(metrics)
+    return run.info.run_id
 
 
