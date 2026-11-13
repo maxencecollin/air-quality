@@ -27,3 +27,7 @@ data/
 # OS files
 .DS_Store
 Thumbs.db
+
+# MLflow local tracking store
+mlruns/
+mlartifacts/
